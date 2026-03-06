@@ -10,7 +10,7 @@ function doPost(e) {
 
     // 從 Script Properties 讀取 API Key (Project Settings -> Script Properties)
     const scriptProperties = PropertiesService.getScriptProperties();
-    const API_KEY = scriptProperties.getProperty('AI_API_KEY');
+    const API_KEY = scriptProperties.getProperty('GEMINI_API_KEY') || scriptProperties.getProperty('AI_API_KEY');
     const API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
     const toneMap = {

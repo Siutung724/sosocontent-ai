@@ -1,12 +1,14 @@
-export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
-
 import { NextRequest, NextResponse } from 'next/server';
-import { CONFIG } from '@/lib/config';
 import { GenerateRequest, GenerateResponse } from '@/lib/types';
+import { INDUSTRIES, USE_CASES } from '@/lib/constants';
+import { BASE_SYSTEM_PROMPT, buildXxxPrompt } from '@/lib/prompts/templates';
+import { createClient } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     const body: GenerateRequest = await req.json();
 
     // 驗證必要欄位
@@ -14,56 +16,149 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 500 });
-    }
+    const openrouterKey = process.env.OPENROUTER_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
 
-    // 構建 Prompt
-    const prompt = `
-你而家係一位專業既香港 Content Marketer。請根據以下資料，用香港人鍾意既地道廣東話同繁體中文寫一組營銷內容。
-語氣要參考：香港高登/連登風，幽默、貼地、帶少量網絡用語，但唔好用粗口。
+    const industryName = INDUSTRIES.find(i => i.value === body.industry)?.label || body.industry;
+    const platformName = USE_CASES.find(u => u.value === body.contentType)?.label || body.contentType;
 
-品牌名稱：${body.brandName}
-產品描述：${body.productDescription}
-目標受眾：${body.targetAudience || '香港大眾'}
-賣點：${(body.keyBenefits || []).join(', ')}
-正式度 (0-3)：${body.toneLevel ?? 1}
-
-請輸出 JSON 格式：
-{
-  "type": "${body.contentType}",
-  "mainContent": "標題、Hook、正文同 CTA",
-  "variants": ["短版本 1", "短版本 2"],
-  "hashtags": ["#tag1", "#tag2"]
-}
-`;
-
-    // 呼叫 Gemini API
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-    const response = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          response_mime_type: "application/json"
-        }
-      }),
+    // 構建用戶提示詞
+    const userPrompt = buildXxxPrompt(body.contentType, {
+      industry_name: industryName,
+      platform_name: platformName,
+      brand_name: body.brandName,
+      product_description: body.productDescription,
+      target_audience: body.targetAudience || '香港大眾',
+      key_benefits: (body.keyBenefits || []).join(', '),
+      tone_level: body.toneLevel ?? 1,
+      content_type: body.contentType
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json({ error: `Gemini API error: ${errorText}` }, { status: response.status });
+    console.log('[Debug] OpenRouter Key present:', !!openrouterKey);
+    console.log('[Debug] Gemini Key present:', !!geminiKey);
+
+    const start = Date.now();
+    let generatedData: any = null;
+
+    if (openrouterKey) {
+      console.log('[API] Using OpenRouter (System + User mode)');
+      const apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+
+      const modelsToTry = [
+        "openai/gpt-4o-mini",
+        "google/gemini-flash-1.5",
+        "meta-llama/llama-3.1-8b-instruct:free"
+      ];
+
+      let lastError = '';
+      for (const model of modelsToTry) {
+        try {
+          console.log(`[API] Trying model via OpenRouter: ${model}`);
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openrouterKey}`,
+              'HTTP-Referer': 'https://sosocontent.ai',
+              'X-Title': 'sosocontent.ai HK',
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [
+                { role: "system", content: BASE_SYSTEM_PROMPT },
+                { role: "user", content: userPrompt }
+              ],
+              response_format: { type: "json_object" }
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            generatedData = JSON.parse(result.choices[0].message.content);
+            console.log(`[API] Success with model ${model} in ${Date.now() - start} ms`);
+            break;
+          } else {
+            const errBody = await response.text();
+            console.warn(`[API] Model ${model} failed with: `, errBody);
+            lastError = errBody;
+          }
+        } catch (err: any) {
+          console.error(`[API] Error with model ${model}: `, err);
+          lastError = err.message;
+        }
+      }
+
+      if (!generatedData) {
+        return NextResponse.json({ error: `OpenRouter failed after trying multiple models. Last error: ${lastError}` }, { status: 500 });
+      }
+
+    } else if (geminiKey) {
+      console.log('[API] Falling back to Gemini native API (v1)');
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+
+      try {
+        const response = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              { role: "user", parts: [{ text: `${BASE_SYSTEM_PROMPT}\n\n${userPrompt}` }] }
+            ]
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          return NextResponse.json({ error: `Gemini API error: ${errorText}` }, { status: response.status });
+        }
+
+        const result = await response.json();
+        const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        const cleanedText = generatedText.replace(/```json|```/g, '').trim();
+        generatedData = JSON.parse(cleanedText);
+        console.log(`[API] Gemini response received in ${Date.now() - start}ms`);
+      } catch (err: any) {
+        console.error('[API] Gemini fetch failed:', err);
+        return NextResponse.json({ error: `Connection failed: ${err.message}` }, { status: 500 });
+      }
+
+    } else {
+      return NextResponse.json({ error: '未設定 API Key' }, { status: 500 });
     }
 
-    const result = await response.json();
-    const generatedText = result.candidates[0].content.parts[0].text;
+    // --- 儲存歷史紀錄 (如果用戶已登入) ---
+    if (user && generatedData) {
+      try {
+        const { data: savedGeneration, error: dbError } = await supabase
+          .from('generations')
+          .insert({
+            user_id: user.id,
+            type: body.contentType,
+            prompt: userPrompt,
+            result: generatedData,
+            meta: {
+              brandName: body.brandName,
+              industry: body.industry,
+              toneLevel: body.toneLevel,
+              targetAudience: body.targetAudience
+            }
+          })
+          .select('id')
+          .single();
 
-    // 解析 AI 輸出的 JSON
-    const data: GenerateResponse = JSON.parse(generatedText);
-    return NextResponse.json(data);
+        if (savedGeneration) {
+          generatedData.id = savedGeneration.id;
+          console.log('[DB] History saved for user:', user.id);
+        }
+        if (dbError) {
+          console.error('[DB] Failed to save history:', dbError);
+        }
+      } catch (dbError) {
+        console.error('[DB] Failed to save history:', dbError);
+      }
+    }
+
+    return NextResponse.json(generatedData);
 
   } catch (error) {
     console.error('API Error:', error);

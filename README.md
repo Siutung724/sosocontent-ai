@@ -15,7 +15,9 @@ npm install
 ```env
 NEXT_PUBLIC_APP_NAME="sosocontent.ai MVP"
 # 指向你的 Cloud Function 或 Apps Script URL
-CONTENT_API_BASE_URL="https://YOUR_BACKEND_URL"
+CONTENT_API_BASE_URL="/api/generate"
+# 你的 Gemini API Key (從 Google AI Studio 獲取)
+GEMINI_API_KEY="你的_GEMINI_KEY"
 ```
 
 ### 3. 啟動開發伺服器
@@ -65,14 +67,14 @@ npm run dev
      --runtime nodejs20 \
      --trigger-http \
      --allow-unauthenticated \
-     --set-env-vars AI_API_KEY=你的_GEMINI_KEY
+     --set-env-vars GEMINI_API_KEY=你的_GEMINI_KEY
    ```
 3. 取得 `https://...` 網址並填入前端的 `CONTENT_API_BASE_URL`。
 
 ### 後端方案 B: Google Apps Script (快速/免費)
 1. 在 Google Drive 建立一個新的 Apps Script。
 2. 貼入 `backend/gas/main.gs` 的代碼。
-3. 在 Project Settings -> Script Properties 加入 `AI_API_KEY`。
+3. 在 Project Settings -> Script Properties 加入 `GEMINI_API_KEY`。
 4. 按下 "Deploy" -> "New Deployment" -> "Web App" (Who has access: Anyone)。
 5. 取得 Web App URL 並填入前端的 `CONTENT_API_BASE_URL`。
 
