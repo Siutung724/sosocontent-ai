@@ -65,14 +65,14 @@ export default async function LandingPage() {
         {/* Desktop: horizontal 3:2 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/banner-desktop.png"
+          src="/banner-mobile.png"
           alt="sosocontent features"
           className="hidden md:block w-full rounded-2xl object-cover"
         />
         {/* Mobile: square 1:1 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/banner-mobile.png"
+          src="/banner-desktop.png"
           alt="sosocontent features"
           className="block md:hidden w-full rounded-2xl object-cover"
         />
