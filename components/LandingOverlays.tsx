@@ -56,28 +56,27 @@ function UpdateBanner() {
 const OFFER_END = new Date('2026-04-30T23:59:59+08:00');
 
 function useCountdown() {
-  const [timeLeft, setTimeLeft] = useState(() => {
-    const diff = OFFER_END.getTime() - Date.now();
-    return diff > 0 ? diff : 0;
-  });
+  // null = not yet mounted (avoid server/client mismatch)
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
-    const id = setInterval(() => {
-      setTimeLeft(prev => {
-        const next = OFFER_END.getTime() - Date.now();
-        return next > 0 ? next : 0;
-      });
-    }, 1000);
+    const calc = () => {
+      const diff = OFFER_END.getTime() - Date.now();
+      return diff > 0 ? diff : 0;
+    };
+    setTimeLeft(calc());
+    const id = setInterval(() => setTimeLeft(calc()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  if (timeLeft === null) return { d: 0, h: 0, m: 0, s: 0, mounted: false, expired: false };
 
   const totalSec = Math.floor(timeLeft / 1000);
   const d = Math.floor(totalSec / 86400);
   const h = Math.floor((totalSec % 86400) / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
-  return { d, h, m, s, expired: timeLeft === 0 };
+  return { d, h, m, s, mounted: true, expired: timeLeft === 0 };
 }
 
 function CountdownBlock({ value, label }: { value: number; label: string }) {
@@ -93,7 +92,7 @@ function CountdownBlock({ value, label }: { value: number; label: string }) {
 
 function PromoModal() {
   const [dismissed, setDismissed] = useState(false);
-  const { d, h, m, s, expired } = useCountdown();
+  const { d, h, m, s, mounted, expired } = useCountdown();
   if (dismissed) return null;
 
   return (
@@ -148,7 +147,7 @@ function PromoModal() {
           </ul>
 
           {/* Countdown */}
-          {!expired ? (
+          {mounted && !expired ? (
             <div className="mb-4">
               <p className="text-[10px] text-secondary/60 mb-2 uppercase tracking-widest">優惠倒數</p>
               <div className="flex items-start justify-center gap-3">
@@ -161,9 +160,9 @@ function PromoModal() {
                 <CountdownBlock value={s} label="秒" />
               </div>
             </div>
-          ) : (
+          ) : mounted && expired ? (
             <p className="text-xs text-danger/80 mb-4">優惠已結束</p>
-          )}
+          ) : null}
 
           <p className="text-xs text-secondary/60 mb-4">
             無需信用卡，隨時取消。
