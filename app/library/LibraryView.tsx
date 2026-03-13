@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { WeeklyPost, WeeklySocialResult } from '@/lib/workflow-types';
 import { useToast } from '@/hooks/useToast';
 
@@ -51,12 +51,43 @@ function inputPreview(inputs: Record<string, string>): string {
 
 function WeeklyPostCard({ post }: { post: WeeklyPost }) {
   const [copied, setCopied] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { showToast } = useToast();
 
   const copy = async () => {
     await navigator.clipboard.writeText(`${post.content}\n\n${post.hashtags.join(' ')}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePlay = async () => {
+    if (playing && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setPlaying(false);
+      return;
+    }
+    setTtsLoading(true);
+    try {
+      const res = await fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: post.content }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '生成失敗');
+      const audio = new Audio(data.audio_url);
+      audioRef.current = audio;
+      audio.onended = () => setPlaying(false);
+      await audio.play();
+      setPlaying(true);
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : '語音生成失敗');
+    } finally {
+      setTtsLoading(false);
+    }
   };
 
   return (
@@ -89,16 +120,32 @@ function WeeklyPostCard({ post }: { post: WeeklyPost }) {
         )}
       </div>
 
-      {/* Voice Bar — placeholder */}
+      {/* Voice Bar */}
       <div className="border-t border-primary/8 px-4 py-2 flex items-center justify-between">
         <button
-          onClick={() => showToast('success', '語音生成功能即將推出')}
-          className="flex items-center gap-1.5 border border-accent/30 text-accent hover:bg-accent/10 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
+          onClick={handlePlay}
+          disabled={ttsLoading}
+          className={`flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+            playing
+              ? 'border-danger/30 text-danger hover:bg-danger/10'
+              : 'border-accent/30 text-accent hover:bg-accent/10'
+          }`}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
-            <path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.268a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.268V3.732Z" />
-          </svg>
-          播放
+          {ttsLoading ? (
+            <svg className="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : playing ? (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
+              <path d="M4.5 2a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5h-2Zm5 0a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5h-2Z" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
+              <path d="M3 3.732a1.5 1.5 0 0 1 2.305-1.265l6.706 4.268a1.5 1.5 0 0 1 0 2.53L5.305 13.533A1.5 1.5 0 0 1 3 12.268V3.732Z" />
+            </svg>
+          )}
+          {ttsLoading ? '生成中...' : playing ? '停止' : '播放'}
         </button>
         <span className="text-xs text-secondary/60">系統預設聲線</span>
       </div>

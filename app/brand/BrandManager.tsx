@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { BrandProfile } from '@/lib/workflow-types';
 import { useToast } from '@/hooks/useToast';
 
@@ -293,6 +294,7 @@ export default function BrandManager({ initial }: { initial: BrandProfile[] }) {
   const [profiles, setProfiles] = useState<BrandProfile[]>(initial);
   const [view, setView] = useState<View>({ mode: 'list' });
   const { showToast } = useToast();
+  const router = useRouter();
 
   // ── API helpers ────────────────────────────────────────────────────────────
 
@@ -430,16 +432,10 @@ export default function BrandManager({ initial }: { initial: BrandProfile[] }) {
           </div>
           <div className="flex gap-3">
             <button
-              onClick={() => showToast('success', 'TTS 設定即將推出，請稍後')}
-              className="text-sm border border-primary/10 hover:bg-primary/8 text-secondary hover:text-primary px-4 py-2 rounded-xl transition-colors"
+              onClick={() => router.push('/settings/voice')}
+              className="text-sm bg-accent hover:bg-accent/90 text-white font-semibold px-4 py-2 rounded-xl transition-colors"
             >
-              上載示範音頻
-            </button>
-            <button
-              onClick={() => showToast('success', 'TTS 設定即將推出，請稍後')}
-              className="text-sm border border-primary/10 hover:bg-primary/8 text-secondary hover:text-primary px-4 py-2 rounded-xl transition-colors"
-            >
-              重新訓練
+              前往聲線設定 →
             </button>
           </div>
         </div>

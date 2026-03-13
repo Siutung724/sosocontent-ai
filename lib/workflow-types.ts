@@ -63,6 +63,22 @@ export interface PromptVariable {
   sort_order: number;
 }
 
+export interface VoiceProfile {
+  id: string;
+  workspace_id: string;
+  display_name: string;
+  provider: string;              // 'minimax' | ...
+  provider_voice_id: string | null;
+  language: string;              // 'yue-HK' | ...
+  description: string | null;
+  default_emotion: string;
+  default_speed: number;
+  default_vol: number;
+  default_pitch: number;
+  is_default: boolean;
+  created_at: string;
+}
+
 export interface Execution {
   id: string;
   workspace_id: string | null;
@@ -73,6 +89,8 @@ export interface Execution {
   result: unknown;               // parsed JSON from AI
   model: string | null;
   tokens_used: number | null;
+  audio_url: string | null;
+  voice_profile_id: string | null;
   created_at: string;
 }
 
@@ -110,3 +128,68 @@ export interface WeeklyPost {
 export interface WeeklySocialResult {
   weekly_plan: WeeklyPost[];
 }
+
+// ── brand_story result shape ──────────────────────────────────────────────────
+
+export interface BrandStoryResult {
+  brand_story: {
+    headline: string;
+    tagline: string;
+    story_short: string;
+    story_long: string;
+    key_values: string[];
+    cta: string;
+  };
+}
+
+// ── product_launch result shape ───────────────────────────────────────────────
+
+export interface ProductLaunchPost {
+  platform: string;
+  content: string;
+  hashtags: string[];
+}
+
+export interface ProductLaunchResult {
+  product_launch: {
+    product_name: string;
+    tagline: string;
+    key_selling_points: { point: string; description: string }[];
+    launch_posts: ProductLaunchPost[];
+    campaign_slogans: string[];
+    email_subject: string;
+  };
+}
+
+// ── brand_trust result shape ──────────────────────────────────────────────────
+
+export interface BrandTrustResult {
+  brand_trust: {
+    trust_headline: string;
+    credibility_statement: string;
+    press_intro: string;
+    testimonial_highlights: { quote: string; attribution: string }[];
+    social_proof_posts: { platform: string; content: string; hashtags: string[] }[];
+    trust_badges: string[];
+  };
+}
+
+// ── brand_strategy result shape ───────────────────────────────────────────────
+
+export interface BrandStrategyResult {
+  brand_strategy: {
+    positioning_statement: string;
+    competitive_advantages: { advantage: string; description: string }[];
+    differentiation_strategy: string;
+    content_pillars: { pillar: string; description: string; example_topics: string[] }[];
+    recommended_channels: string[];
+    action_plan: string[];
+  };
+}
+
+export type WorkflowResult =
+  | WeeklySocialResult
+  | BrandStoryResult
+  | ProductLaunchResult
+  | BrandTrustResult
+  | BrandStrategyResult;

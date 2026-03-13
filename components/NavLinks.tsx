@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: '/workflows', label: '工作坊' },
   { href: '/library',   label: '內容庫' },
   { href: '/brand',     label: '品牌'   },
+  { href: '/pricing',   label: '定價'   },
   { href: '/settings',  label: '設定'   },
 ];
 
