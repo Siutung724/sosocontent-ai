@@ -60,8 +60,26 @@ export default async function LandingPage() {
         </div>
       </header>
 
+      {/* ── Banner infographic ── */}
+      <div className="w-full max-w-6xl mx-auto px-4 md:px-8 lg:px-12 pt-4 pb-2">
+        {/* Desktop: horizontal 3:2 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/banner-desktop.png"
+          alt="sosocontent features"
+          className="hidden md:block w-full rounded-2xl object-cover"
+        />
+        {/* Mobile: square 1:1 */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/banner-mobile.png"
+          alt="sosocontent features"
+          className="block md:hidden w-full rounded-2xl object-cover"
+        />
+      </div>
+
       {/* ── Hero ── */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 pt-12 pb-24">
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 pt-10 pb-24">
         <div className="max-w-3xl mx-auto">
 
           {/* Eyebrow tag */}
