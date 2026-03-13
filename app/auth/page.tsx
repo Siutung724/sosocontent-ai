@@ -1,12 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 
 type AuthView = 'login' | 'magic_link_sent';
 
+// Wrap in Suspense because useSearchParams() requires it at build time
 export default function AuthPage() {
+  return (
+    <Suspense>
+      <AuthForm />
+    </Suspense>
+  );
+}
+
+function AuthForm() {
   const supabase = createClient();
   const searchParams = useSearchParams();
 
