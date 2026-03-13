@@ -217,10 +217,11 @@ export default function WorkflowForm({ workflowKey, variables }: WorkflowFormPro
     return init;
   });
 
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState<string | null>(null);
-  const [result, setResult]           = useState<WorkflowResult | null>(null);
-  const [executionId, setExecutionId] = useState<string | null>(null);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState<string | null>(null);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [result, setResult]             = useState<WorkflowResult | null>(null);
+  const [executionId, setExecutionId]   = useState<string | null>(null);
   const { showToast } = useToast();
 
   // ── Handlers ────────────────────────────────────────────────────────────────
@@ -251,6 +252,10 @@ export default function WorkflowForm({ workflowKey, variables }: WorkflowFormPro
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 403) {
+          setQuotaExceeded(true);
+          return;
+        }
         setError(data.error ?? '生成失敗，請稍後再試');
         showToast('error', data.error ?? '生成失敗，請稍後再試');
         return;
@@ -367,6 +372,22 @@ export default function WorkflowForm({ workflowKey, variables }: WorkflowFormPro
             )}
           </div>
         ))}
+
+        {/* Quota exceeded banner */}
+        {quotaExceeded && (
+          <div className="bg-accent/8 border border-accent/30 rounded-xl px-4 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-primary">本月免費額度已用盡 🔒</p>
+              <p className="text-xs text-secondary mt-0.5">升級至 Pro，即享無限 AI 生成</p>
+            </div>
+            <a
+              href="/pricing"
+              className="shrink-0 bg-accent text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-accent/90 transition-colors"
+            >
+              立即升級 →
+            </a>
+          </div>
+        )}
 
         {/* Error banner */}
         {error && (

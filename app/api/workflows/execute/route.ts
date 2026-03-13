@@ -40,6 +40,31 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
     );
   }
 
+  // ── Plan limit check ─────────────────────────────────────────────────────────
+  // Free users: max 1 execution per calendar month.
+  // Plan is read from user_metadata (written by Stripe webhook — no extra DB call).
+  if (user) {
+    const plan = (user.user_metadata?.plan as string | undefined) ?? 'free';
+    if (plan === 'free') {
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      const { count } = await supabase
+        .from('executions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', monthStart.toISOString());
+
+      if ((count ?? 0) >= 1) {
+        return NextResponse.json(
+          { error: '免費版每月限生成 1 次，請升級至 Pro 解鎖無限生成。' } as any,
+          { status: 403 },
+        );
+      }
+    }
+  }
+
   // 1. Fetch the prompt template from Supabase ─────────────────────────────────
   let templateQuery = supabase
     .from('prompt_templates')
