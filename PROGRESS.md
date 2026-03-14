@@ -240,11 +240,12 @@ Phase 3.8 — Admin CRM ✅
   [✅] Admin Dashboard（用戶清單 + 統計）
   [✅] CSV 匯出（Excel 繁中）
 
-Phase 4 — 部署上線 ⏳
-  [ ] Vercel 部署
-  [ ] Production Supabase + Migrations
-  [ ] 環境變數全部設定
-  [ ] 域名 sosocontent.ai 綁定
+Phase 4 — 部署上線 ✅（2026-03-15）
+  [✅] Vercel 部署 → https://sosocontent-web.vercel.app
+  [✅] 環境變數全部設定（含 STRIPE_WEBHOOK_SECRET）
+  [✅] Stripe Webhook endpoint 設定完成
+  [✅] Supabase Auth URL 更新（Site URL + Redirect URLs）
+  [✅] 域名 sosocontent.ai 綁定 → Valid Configuration
 
 Phase 4.5 — 社交媒體整合 & 排程（參考 Manus）⏳
   [ ] 社交媒體連接器（Instagram Graph API OAuth）
