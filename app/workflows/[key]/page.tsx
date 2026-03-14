@@ -9,12 +9,8 @@ interface PageProps {
   params: Promise<{ key: string }>;
 }
 
-/** Monthly credit allowance per plan. -1 = unlimited. */
-const PLAN_MONTHLY_CREDITS: Record<string, number> = {
-  free:       100,
-  pro:        1000,
-  enterprise: -1,
-};
+const FREE_LIFETIME_CREDITS = 120;
+const PRO_PERIOD_CREDITS    = 1000;
 
 export default async function WorkflowPage({ params }: PageProps) {
   const { key } = await params;
@@ -54,25 +50,45 @@ export default async function WorkflowPage({ params }: PageProps) {
   // 4. Compute credits remaining for this user
   const { data: { user } } = await supabase.auth.getUser();
   const plan = (user?.user_metadata?.plan as string | undefined) ?? 'free';
-  const planAllowance = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
-  let creditsRemaining = planAllowance; // -1 = unlimited
+  let creditsRemaining = -1; // default: unlimited (enterprise)
 
-  if (planAllowance !== -1 && user) {
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
+  if (user && plan !== 'enterprise') {
+    let periodStart: string | null = null;
+    let allowance: number;
 
-    const { data: usageRows } = await supabase
+    if (plan === 'free') {
+      allowance = FREE_LIFETIME_CREDITS;
+      periodStart = null; // all-time
+    } else {
+      allowance = PRO_PERIOD_CREDITS;
+      const { data: planRow } = await supabase
+        .from('user_plans')
+        .select('current_period_end')
+        .eq('user_id', user.id)
+        .single();
+
+      if (planRow?.current_period_end) {
+        const periodEnd = new Date(planRow.current_period_end);
+        periodEnd.setMonth(periodEnd.getMonth() - 1);
+        periodStart = periodEnd.toISOString();
+      } else {
+        const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0);
+        periodStart = d.toISOString();
+      }
+    }
+
+    let usageQuery = supabase
       .from('executions')
       .select('credits_used')
-      .eq('user_id', user.id)
-      .gte('created_at', monthStart.toISOString());
+      .eq('user_id', user.id);
+    if (periodStart) usageQuery = usageQuery.gte('created_at', periodStart);
 
+    const { data: usageRows } = await usageQuery;
     const used = (usageRows ?? []).reduce(
       (sum, row) => sum + (row.credits_used ?? 1),
       0,
     );
-    creditsRemaining = Math.max(0, planAllowance - used);
+    creditsRemaining = Math.max(0, allowance - used);
   }
 
   return (

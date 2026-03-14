@@ -10,12 +10,11 @@ import type {
 
 // ── Credit config ─────────────────────────────────────────────────────────────
 
-/** Monthly credit allowance per plan. -1 = unlimited. */
-const PLAN_MONTHLY_CREDITS: Record<string, number> = {
-  free:       100,
-  pro:        1000,
-  enterprise: -1,
-};
+/** Free users get a one-time lifetime allotment (never resets). */
+const FREE_LIFETIME_CREDITS = 120;
+
+/** Pro users get this many credits per billing period (no rollover). -1 = unlimited. */
+const PRO_PERIOD_CREDITS = 1000;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -80,30 +79,57 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
   // 2. Credit check ─────────────────────────────────────────────────────────────
   if (user) {
     const plan = (user.user_metadata?.plan as string | undefined) ?? 'free';
-    const planAllowance = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
 
-    if (planAllowance !== -1) {
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
+    if (plan !== 'enterprise') {
+      let periodStart: string | null = null;
+      let allowance: number;
 
-      const { data: usageRows } = await supabase
+      if (plan === 'free') {
+        // Free: lifetime one-time allotment — no date filter
+        allowance = FREE_LIFETIME_CREDITS;
+        periodStart = null;
+      } else {
+        // Pro: per billing period (period start = current_period_end - 1 month)
+        allowance = PRO_PERIOD_CREDITS;
+        const { data: planRow } = await supabase
+          .from('user_plans')
+          .select('current_period_end')
+          .eq('user_id', user.id)
+          .single();
+
+        if (planRow?.current_period_end) {
+          const periodEnd = new Date(planRow.current_period_end);
+          periodEnd.setMonth(periodEnd.getMonth() - 1);
+          periodStart = periodEnd.toISOString();
+        } else {
+          // Fallback: calendar month start
+          const d = new Date();
+          d.setDate(1); d.setHours(0, 0, 0, 0);
+          periodStart = d.toISOString();
+        }
+      }
+
+      let usageQuery = supabase
         .from('executions')
         .select('credits_used')
-        .eq('user_id', user.id)
-        .gte('created_at', monthStart.toISOString());
+        .eq('user_id', user.id);
+      if (periodStart) usageQuery = usageQuery.gte('created_at', periodStart);
 
+      const { data: usageRows } = await usageQuery;
       const creditsUsed = (usageRows ?? []).reduce(
         (sum, row) => sum + (row.credits_used ?? 1),
         0,
       );
 
-      if (creditsUsed + creditCost > planAllowance) {
-        const remaining = Math.max(0, planAllowance - creditsUsed);
+      if (creditsUsed + creditCost > allowance) {
+        const remaining = Math.max(0, allowance - creditsUsed);
+        const isFree = plan === 'free';
         return NextResponse.json(
           {
             error: remaining === 0
-              ? `本月積分已用盡（${planAllowance} 積分），請升級至 Pro 解鎖更多生成次數。`
+              ? isFree
+                ? `免費試用積分已用盡（共 ${allowance} 積分），升級至 Pro 即可每月獲得 ${PRO_PERIOD_CREDITS} 積分。`
+                : `本期積分已用盡（${allowance} 積分），下期自動補充。`
               : `積分不足：此工作流程需要 ${creditCost} 積分，你只剩 ${remaining} 積分。`,
             creditsRemaining: remaining,
             creditCost,

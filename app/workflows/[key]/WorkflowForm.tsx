@@ -382,8 +382,8 @@ export default function WorkflowForm({ workflowKey, variables, creditCost, credi
         {quotaExceeded && (
           <div className="bg-accent/8 border border-accent/30 rounded-xl px-4 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-primary">本月積分已用盡 🔒</p>
-              <p className="text-xs text-secondary mt-0.5">升級至 Pro（1,000 積分/月）即享更多 AI 生成</p>
+              <p className="text-sm font-semibold text-primary">積分已用盡 🔒</p>
+              <p className="text-xs text-secondary mt-0.5">升級至 Pro，每個結帳周期獲得 1,000 積分</p>
             </div>
             <a
               href="/pricing"
