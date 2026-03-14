@@ -255,12 +255,32 @@ Phase 4.5 — 社交媒體整合 & 排程（參考 Manus）⏳
   [ ] 技能包：行業 Prompt 模板（零售 / 餐飲 / 美容 / 教育）
   [ ] 品牌個性化加強：語氣偏好、常用 hashtag、受眾設定
 
+Phase 4.6 — Credit 制度（商業模式轉型）⏳
+  [ ] DB Migration：user_credits 表（餘額、交易記錄）
+  [ ] 每個 workflow 定義 credit 消耗（workflow seed 加 credit_cost 欄位）
+  [ ] API 層：執行前檢查 credit 餘額，執行後扣款
+  [ ] 前端：顯示剩餘 credit、每個功能標示消耗量
+  [ ] 免費新用戶：送 10 credits（一次性，用完不補）
+  [ ] Stripe：改為 credit pack 購買（50/100/500 credits）
+  [ ] Admin：顯示每用戶 credit 餘額 + 消費記錄
+  [ ] 內部文件：COST.md（各供應商成本 vs credit 定價）
+
 Phase 5 — 增長功能 🚫
   [ ] Google Sheets API 匯出（Admin）
   [ ] Landing Page 更新（5 個 workflows 展示）
   [ ] Mobile Nav（底部 tab bar）
   [ ] Tone Learning（記錄用戶編輯，提升生成品質）
   [ ] Gunter 字體（Logo）
+
+Phase 6 — 數字人影片（企業版專屬）🚫
+  [ ] TTS VO 旁白：文字 → 語音 → 下載 MP3（已有 TTS 基礎）
+  [ ] 影片 + 語音 Lip Sync：上傳 5 秒影片 + 音頻 → 對嘴影片
+  [ ] 數字人相片模式：上傳真人/卡通人像 → 說話頭像影片
+  [ ] Lip Sync 供應商（建議優先序）：
+      Phase 1 → D-ID API（$29/月，自助，支援相片+影片）
+      Phase 2 → VOZO AI LipREAL™（Enterprise，真人影片品質最高）
+  [ ] 影片格式：支援 MP4 上傳，輸出 MP4，限 5-10 秒
+  [ ] 企業版 credit 消耗：數字人影片 = 10 credits/次
 ```
 
 ---

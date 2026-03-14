@@ -119,14 +119,22 @@ export interface ExecuteWorkflowResponse {
 
 export interface WeeklyPost {
   day: number;
+  day_label?: string;       // e.g. "星期一"
+  category?: string;        // 教育價值 | 互動趣味 | 信任案例 | 推廣轉化
   theme: string;
   content: string;
+  engagement_hook?: string; // question / CTA to drive comments
   visual_concept: string;
   hashtags: string[];
+  best_post_time?: string;  // e.g. "09:00"
 }
 
 export interface WeeklySocialResult {
-  weekly_plan: WeeklyPost[];
+  // v2: wrapped object with strategy_note + posts[]
+  // v1 (legacy): flat array — both formats supported in LibraryView
+  weekly_plan:
+    | WeeklyPost[]
+    | { strategy_note?: string; posts: WeeklyPost[] };
 }
 
 // ── brand_story result shape ──────────────────────────────────────────────────

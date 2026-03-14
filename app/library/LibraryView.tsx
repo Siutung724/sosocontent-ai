@@ -95,6 +95,13 @@ function CopyBlock({ label, text }: { label: string; text: string }) {
 
 // ── WeeklyPostCard ────────────────────────────────────────────────────────────
 
+const CATEGORY_STYLES: Record<string, string> = {
+  '教育價值': 'bg-blue-500/10 text-blue-400',
+  '互動趣味': 'bg-green-500/10 text-green-400',
+  '信任案例': 'bg-amber-500/10 text-amber-400',
+  '推廣轉化': 'bg-purple-500/10 text-purple-400',
+};
+
 function WeeklyPostCard({ post }: { post: WeeklyPost }) {
   const [copied, setCopied] = useState(false);
   const [ttsLoading, setTtsLoading] = useState(false);
@@ -103,7 +110,8 @@ function WeeklyPostCard({ post }: { post: WeeklyPost }) {
   const { showToast } = useToast();
 
   const copy = async () => {
-    await navigator.clipboard.writeText(`${post.content}\n\n${post.hashtags.join(' ')}`);
+    const hook = post.engagement_hook ? `\n\n${post.engagement_hook}` : '';
+    await navigator.clipboard.writeText(`${post.content}${hook}\n\n${post.hashtags.join(' ')}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -136,16 +144,24 @@ function WeeklyPostCard({ post }: { post: WeeklyPost }) {
     }
   };
 
+  const categoryStyle = post.category ? (CATEGORY_STYLES[post.category] ?? 'bg-primary/10 text-secondary') : null;
+
   return (
     <div className="bg-surface border border-primary/8 rounded-xl overflow-hidden">
       <div className="bg-surface-2 border-b border-primary/8 px-4 py-2.5 flex items-center justify-between">
-        <div>
-          <span className="text-xs font-bold text-accent uppercase tracking-widest">Day {post.day}</span>
-          <p className="text-sm font-semibold text-primary">{post.theme}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">
+            Day {post.day}{post.day_label ? ` · ${post.day_label}` : ''}
+          </span>
+          {categoryStyle && (
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${categoryStyle}`}>
+              {post.category}
+            </span>
+          )}
         </div>
         <button
           onClick={copy}
-          className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+          className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors shrink-0 ${
             copied ? 'border-success/30 text-success bg-success/10' : 'border-primary/10 text-secondary hover:border-primary/20 hover:text-primary'
           }`}
         >
@@ -153,7 +169,13 @@ function WeeklyPostCard({ post }: { post: WeeklyPost }) {
         </button>
       </div>
       <div className="px-4 py-3 space-y-2">
+        <p className="text-sm font-semibold text-primary/80">{post.theme}</p>
         <p className="text-sm text-primary leading-relaxed whitespace-pre-line">{post.content}</p>
+        {post.engagement_hook && (
+          <p className="text-xs text-accent/80 bg-accent/5 border border-accent/10 rounded-lg px-3 py-2 flex gap-1.5">
+            <span>💬</span>{post.engagement_hook}
+          </p>
+        )}
         {post.visual_concept && (
           <p className="text-xs text-secondary italic flex gap-1.5"><span>🖼</span>{post.visual_concept}</p>
         )}
@@ -191,7 +213,9 @@ function WeeklyPostCard({ post }: { post: WeeklyPost }) {
           )}
           {ttsLoading ? '生成中...' : playing ? '停止' : '播放'}
         </button>
-        <span className="text-xs text-secondary/60">系統預設聲線</span>
+        <span className="text-xs text-secondary/60">
+          {post.best_post_time ? `⏰ 建議 ${post.best_post_time} 發布` : '系統預設聲線'}
+        </span>
       </div>
     </div>
   );
@@ -424,10 +448,19 @@ function RawJson({ result }: { result: unknown }) {
 function ResultPanel({ workflowKey, result }: { workflowKey: string | null; result: unknown }) {
   if (workflowKey === 'weekly_social') {
     const data = result as WeeklySocialResult;
-    if (data?.weekly_plan?.length) {
+    // v2 format: { strategy_note, posts: [] }
+    const plan = data?.weekly_plan;
+    const posts = Array.isArray(plan) ? plan : (plan as { posts?: WeeklyPost[] })?.posts;
+    const strategyNote = !Array.isArray(plan) ? (plan as { strategy_note?: string })?.strategy_note : undefined;
+    if (posts?.length) {
       return (
         <div className="space-y-3 pt-2">
-          {data.weekly_plan.map(post => <WeeklyPostCard key={post.day} post={post} />)}
+          {strategyNote && (
+            <p className="text-xs text-secondary/80 bg-surface-2 border border-primary/8 rounded-xl px-4 py-2.5 flex gap-2">
+              <span>💡</span>{strategyNote}
+            </p>
+          )}
+          {posts.map(post => <WeeklyPostCard key={post.day} post={post} />)}
         </div>
       );
     }
