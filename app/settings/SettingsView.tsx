@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useToast } from '@/hooks/useToast';
 
 interface SettingsViewProps {
@@ -65,34 +66,21 @@ export default function SettingsView({ email, displayName, createdAt }: Settings
       <section>
         <h2 className="text-xs font-semibold text-secondary uppercase tracking-widest mb-4">聲線設定</h2>
         <div className="bg-surface border border-primary/8 rounded-2xl p-5">
-          <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-start justify-between gap-3 mb-3">
             <div>
-              <h3 className="text-sm font-semibold text-primary">我的聲線（Voice Profile）</h3>
-              <p className="text-xs text-secondary mt-0.5">用你的聲線朗讀 AI 生成的內容</p>
+              <h3 className="text-sm font-semibold text-primary">粵語 TTS 聲線</h3>
+              <p className="text-xs text-secondary mt-0.5">管理聲線設定，用於 AI 生成內容的語音朗讀</p>
             </div>
-            <span className="text-xs bg-secondary/10 text-secondary px-2 py-0.5 rounded-full shrink-0">
-              未建立
+            <span className="text-xs bg-cta/10 text-cta px-2 py-0.5 rounded-full shrink-0 font-medium">
+              MiniMax
             </span>
           </div>
-          <div className="space-y-1.5 text-sm text-secondary mb-5">
-            <p><span className="text-secondary/60">聲線名稱：</span>預設聲線</p>
-            <p><span className="text-secondary/60">語言：</span>粵語（zh-HK）</p>
-            <p><span className="text-secondary/60">訓練狀態：</span>未建立</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => showToast('success', 'TTS 設定即將推出，請稍後')}
-              className="text-sm border border-primary/10 hover:bg-primary/8 text-secondary hover:text-primary px-4 py-2 rounded-xl transition-colors"
-            >
-              上載示範音頻
-            </button>
-            <button
-              onClick={() => showToast('success', 'TTS 設定即將推出，請稍後')}
-              className="text-sm border border-primary/10 hover:bg-primary/8 text-secondary hover:text-primary px-4 py-2 rounded-xl transition-colors"
-            >
-              重新訓練
-            </button>
-          </div>
+          <Link
+            href="/settings/voice"
+            className="inline-flex items-center gap-2 bg-cta hover:bg-cta/90 text-body font-semibold text-sm px-4 py-2 rounded-xl transition-colors"
+          >
+            管理聲線設定 →
+          </Link>
         </div>
       </section>
 

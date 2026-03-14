@@ -61,20 +61,20 @@ export default async function LandingPage() {
       </header>
 
       {/* ── Banner infographic ── */}
-      <div className="w-full max-w-6xl mx-auto px-4 md:px-8 lg:px-12 pt-4 pb-2">
-        {/* Desktop: horizontal 3:2 */}
+      <div className="w-full">
+        {/* Desktop: horizontal */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/banner-mobile.png"
           alt="sosocontent features"
-          className="hidden md:block w-full rounded-2xl object-cover"
+          className="hidden md:block w-full object-cover"
         />
-        {/* Mobile: square 1:1 */}
+        {/* Mobile: square */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/banner-desktop.png"
           alt="sosocontent features"
-          className="block md:hidden w-full rounded-2xl object-cover"
+          className="block md:hidden w-full object-cover"
         />
       </div>
 
@@ -144,47 +144,7 @@ export default async function LandingPage() {
 
       </main>
 
-      {/* ── Bottom banner with hover text overlay ── */}
-      <div className="w-full max-w-6xl mx-auto px-4 md:px-8 lg:px-12 pb-16">
-        <Link href="/auth" className="group relative block rounded-2xl overflow-hidden">
-
-          {/* Desktop image */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/banner-mobile.png"
-            alt="sosocontent"
-            className="hidden md:block w-full object-cover"
-          />
-          {/* Mobile image */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/banner-desktop.png"
-            alt="sosocontent"
-            className="block md:hidden w-full object-cover"
-          />
-
-          {/* Hover overlay — slides up from bottom */}
-          <div className="absolute inset-0 flex flex-col items-center justify-end
-                          bg-gradient-to-t from-black/80 via-black/40 to-transparent
-                          opacity-0 group-hover:opacity-100
-                          translate-y-4 group-hover:translate-y-0
-                          transition-all duration-500 ease-out
-                          pb-10 px-6 text-center">
-            <h2 className="text-3xl md:text-5xl font-extrabold text-cta leading-tight mb-3">
-              讓 SOSO 幫你寫<br />每一篇貼文
-            </h2>
-            <p className="text-sm md:text-base text-white/80 mb-6 max-w-md">
-              專為香港中小企打造，一鍵生成地道廣東話品牌文案
-            </p>
-            <span className="inline-block bg-cta text-body font-bold text-sm px-8 py-3 rounded-xl">
-              免費開始 →
-            </span>
-          </div>
-
-        </Link>
-      </div>
-
-      {/* ── Footer ── */}
+{/* ── Footer ── */}
       <footer className="border-t border-primary/8 px-6 py-6 text-center">
         <p className="text-xs text-secondary/50">
           © 2025 sosocontent.ai · 香港製造 🇭🇰
