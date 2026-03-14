@@ -11,17 +11,15 @@ function UpdateBanner() {
   if (dismissed) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 w-80 bg-surface border border-primary/10 rounded-2xl shadow-toast overflow-hidden">
+    <div className="fixed bottom-6 right-6 z-40 w-80 bg-surface border border-cta/20 rounded-2xl shadow-toast overflow-hidden">
+      {/* Top accent bar */}
+      <div className="h-1 bg-cta w-full" />
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
-        <div>
-          <span className="block text-xs font-bold text-cta uppercase tracking-widest mb-0.5">
-            📢 最新消息
-          </span>
-          <h3 className="text-sm font-semibold text-primary leading-snug">
-            7 大 AI 工作流程全面上線 🎉
-          </h3>
-        </div>
+      <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
+        <h3 className="text-base font-bold text-primary leading-snug">
+          廣東話 AI 文案<br />
+          <span className="text-cta">秒速生成，即刻用</span>
+        </h3>
         <button
           onClick={() => setDismissed(true)}
           className="shrink-0 text-secondary/50 hover:text-secondary transition-colors mt-0.5"
@@ -34,15 +32,21 @@ function UpdateBanner() {
       </div>
 
       {/* Body */}
-      <div className="px-5 pb-4">
-        <p className="text-xs text-secondary leading-relaxed mb-3">
-          包括：七日內容策略、KOL 腳本、限時優惠帖、競爭對手廣告拆解等，免費帳戶送 120 積分即刻體驗。
-        </p>
+      <div className="px-5 pb-5">
+        <ul className="space-y-2 mb-4">
+          {[
+            '🎬 KOL 腳本 + 限時爆款帖',
+            '🔍 拆解競爭對手廣告策略',
+            '🎁 免費送 120 積分，即刻試',
+          ].map(item => (
+            <li key={item} className="text-sm text-secondary font-medium">{item}</li>
+          ))}
+        </ul>
         <Link
           href="/auth"
-          className="inline-flex items-center gap-1.5 bg-cta text-body text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-cta/90 transition-colors"
+          className="block w-full bg-cta text-body text-sm font-bold text-center py-2.5 rounded-xl hover:bg-cta/90 transition-colors"
         >
-          立即試用 →
+          免費開始 →
         </Link>
       </div>
     </div>
