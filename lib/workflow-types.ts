@@ -31,6 +31,7 @@ export interface Workflow {
   name: string;
   description: string | null;
   is_active: boolean;
+  credit_cost: number;           // credits consumed per execution (default 1)
 }
 
 export interface PromptTemplate {
@@ -90,6 +91,7 @@ export interface Execution {
   model: string | null;
   tokens_used: number | null;
   audio_url: string | null;
+  credits_used: number;
   voice_profile_id: string | null;
   created_at: string;
 }

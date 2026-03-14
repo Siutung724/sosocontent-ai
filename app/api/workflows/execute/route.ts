@@ -8,6 +8,15 @@ import type {
   BrandProfile,
 } from '@/lib/workflow-types';
 
+// ── Credit config ─────────────────────────────────────────────────────────────
+
+/** Monthly credit allowance per plan. -1 = unlimited. */
+const PLAN_MONTHLY_CREDITS: Record<string, number> = {
+  free:       5,
+  pro:        100,
+  enterprise: -1,
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Replace all {{PLACEHOLDER}} tokens in a template string with values from inputs */
@@ -40,35 +49,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
     );
   }
 
-  // ── Plan limit check ─────────────────────────────────────────────────────────
-  // Free users: max 1 execution per calendar month.
-  // Plan is read from user_metadata (written by Stripe webhook — no extra DB call).
-  if (user) {
-    const plan = (user.user_metadata?.plan as string | undefined) ?? 'free';
-    if (plan === 'free') {
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
-
-      const { count } = await supabase
-        .from('executions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', monthStart.toISOString());
-
-      if ((count ?? 0) >= 1) {
-        return NextResponse.json(
-          { error: '免費版每月限生成 1 次，請升級至 Pro 解鎖無限生成。' } as any,
-          { status: 403 },
-        );
-      }
-    }
-  }
-
   // 1. Fetch the prompt template from Supabase ─────────────────────────────────
   let templateQuery = supabase
     .from('prompt_templates')
-    .select('*, workflows!inner(id, key, is_active)')
+    .select('*, workflows!inner(id, key, is_active, credit_cost)')
     .limit(1);
 
   if (body.templateId) {
@@ -86,11 +70,51 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
     );
   }
 
-  const template = templateRows[0] as PromptTemplate & { workflows: { id: string; key: string } };
-  const workflowId: string = template.workflows.id;
+  const template = templateRows[0] as PromptTemplate & {
+    workflows: { id: string; key: string; credit_cost: number };
+  };
+  const workflowId: string  = template.workflows.id;
   const workflowKey: string = template.workflows.key;
+  const creditCost: number  = template.workflows.credit_cost ?? 1;
 
-  // 2. Fetch prompt variables (for validation & default injection) ──────────────
+  // 2. Credit check ─────────────────────────────────────────────────────────────
+  if (user) {
+    const plan = (user.user_metadata?.plan as string | undefined) ?? 'free';
+    const planAllowance = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
+
+    if (planAllowance !== -1) {
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      const { data: usageRows } = await supabase
+        .from('executions')
+        .select('credits_used')
+        .eq('user_id', user.id)
+        .gte('created_at', monthStart.toISOString());
+
+      const creditsUsed = (usageRows ?? []).reduce(
+        (sum, row) => sum + (row.credits_used ?? 1),
+        0,
+      );
+
+      if (creditsUsed + creditCost > planAllowance) {
+        const remaining = Math.max(0, planAllowance - creditsUsed);
+        return NextResponse.json(
+          {
+            error: remaining === 0
+              ? `本月積分已用盡（${planAllowance} 積分），請升級至 Pro 解鎖更多生成次數。`
+              : `積分不足：此工作流程需要 ${creditCost} 積分，你只剩 ${remaining} 積分。`,
+            creditsRemaining: remaining,
+            creditCost,
+          } as any,
+          { status: 403 },
+        );
+      }
+    }
+  }
+
+  // 3. Fetch prompt variables (for validation & default injection) ──────────────
   const { data: variables } = await supabase
     .from('prompt_variables')
     .select('*')
@@ -99,7 +123,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
 
   const vars: PromptVariable[] = variables ?? [];
 
-  // 3. Optionally merge BrandProfile defaults into inputs ───────────────────────
+  // 4. Optionally merge BrandProfile defaults into inputs ───────────────────────
   let mergedInputs: Record<string, string> = { ...body.inputs };
 
   if (body.brandProfileId) {
@@ -111,7 +135,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
 
     if (profile) {
       const bp = profile as BrandProfile;
-      // Only fill in fields the user hasn't explicitly provided
       if (!mergedInputs.TARGET_AUDIENCE && bp.target_audience)
         mergedInputs.TARGET_AUDIENCE = bp.target_audience;
       if (!mergedInputs.BRAND_DESCRIPTION && bp.description)
@@ -123,14 +146,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
     }
   }
 
-  // 4. Apply variable defaults for any still-missing fields ─────────────────────
+  // 5. Apply variable defaults for any still-missing fields ─────────────────────
   for (const v of vars) {
     if (!mergedInputs[v.name] && v.default_value) {
       mergedInputs[v.name] = v.default_value;
     }
   }
 
-  // 5. Validate required variables ──────────────────────────────────────────────
+  // 6. Validate required variables ──────────────────────────────────────────────
   const missing = vars
     .filter(v => v.required && !mergedInputs[v.name]?.trim())
     .map(v => v.label);
@@ -142,10 +165,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
     );
   }
 
-  // 6. Render the user prompt from template ─────────────────────────────────────
+  // 7. Render the user prompt from template ─────────────────────────────────────
   const userPrompt = renderTemplate(template.template_body, mergedInputs);
 
-  // 7. Call the AI model ─────────────────────────────────────────────────────────
+  // 8. Call the AI model ─────────────────────────────────────────────────────────
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
 
@@ -230,7 +253,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
     return NextResponse.json({ error: '未設定 AI API Key' } as any, { status: 500 });
   }
 
-  // 8. Parse AI output ───────────────────────────────────────────────────────────
+  // 9. Parse AI output ───────────────────────────────────────────────────────────
   let parsedResult: unknown;
   try {
     parsedResult = JSON.parse(extractJson(rawText));
@@ -241,7 +264,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
     );
   }
 
-  // 9. Save execution log ───────────────────────────────────────────────────────
+  // 10. Save execution log ──────────────────────────────────────────────────────
   let executionId = crypto.randomUUID();
 
   const executionRow = {
@@ -255,6 +278,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
     result: parsedResult,
     model: usedModel,
     tokens_used: tokensUsed,
+    credits_used: creditCost,
   };
 
   const { data: savedExecution } = await supabase
@@ -265,7 +289,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
 
   if (savedExecution?.id) executionId = savedExecution.id;
 
-  // 10. Return response ──────────────────────────────────────────────────────────
+  // 11. Return response ─────────────────────────────────────────────────────────
   return NextResponse.json({
     executionId,
     workflowKey,

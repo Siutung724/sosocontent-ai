@@ -12,6 +12,8 @@ import type {
 interface WorkflowFormProps {
   workflowKey: string;
   variables: PromptVariable[];
+  creditCost: number;
+  creditsRemaining: number; // -1 = unlimited
 }
 
 // ── Spinner ───────────────────────────────────────────────────────────────────
@@ -207,7 +209,7 @@ function PostCard({ post, executionId }: { post: WeeklyPost; executionId: string
 
 // ── Main form ─────────────────────────────────────────────────────────────────
 
-export default function WorkflowForm({ workflowKey, variables }: WorkflowFormProps) {
+export default function WorkflowForm({ workflowKey, variables, creditCost, creditsRemaining }: WorkflowFormProps) {
   // Initialise inputs with any default_value from DB
   const [inputs, setInputs] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -266,9 +268,12 @@ export default function WorkflowForm({ workflowKey, variables }: WorkflowFormPro
       const successMsg: Record<string, string> = {
         weekly_social:   '7 日貼文計劃已生成！',
         brand_story:     '品牌故事文案已生成！',
-        product_launch:  '新品推廣文案套件已生成！',
-        brand_trust:     '品牌公信力內容已生成！',
-        brand_strategy:  '競爭分析與策略已生成！',
+        product_launch:  '廣告文案套件已生成！',
+        brand_trust:     '客評廣告素材已生成！',
+        brand_strategy:  '品牌定位策略已生成！',
+        kol_script:      'KOL 合作腳本已生成！',
+        flash_sale:      '限時優惠推廣帖已生成！',
+        competitor_ad:   '競爭對手廣告分析已生成！',
       };
       showToast('success', successMsg[workflowKey] ?? '內容已生成！');
     } catch {
@@ -377,8 +382,8 @@ export default function WorkflowForm({ workflowKey, variables }: WorkflowFormPro
         {quotaExceeded && (
           <div className="bg-accent/8 border border-accent/30 rounded-xl px-4 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-primary">本月免費額度已用盡 🔒</p>
-              <p className="text-xs text-secondary mt-0.5">升級至 Pro，即享無限 AI 生成</p>
+              <p className="text-sm font-semibold text-primary">本月積分已用盡 🔒</p>
+              <p className="text-xs text-secondary mt-0.5">升級至 Pro（100 積分/月）即享更多 AI 生成</p>
             </div>
             <a
               href="/pricing"
@@ -396,10 +401,26 @@ export default function WorkflowForm({ workflowKey, variables }: WorkflowFormPro
           </div>
         )}
 
+        {/* Credits indicator */}
+        {!quotaExceeded && (
+          <div className="flex items-center justify-between text-xs text-secondary/70 px-1">
+            <span>
+              消耗 <span className="font-semibold text-accent">{creditCost}</span> 積分
+            </span>
+            {creditsRemaining === -1 ? (
+              <span className="text-cta font-medium">✓ 無限積分</span>
+            ) : (
+              <span className={creditsRemaining < creditCost ? 'text-danger font-medium' : ''}>
+                剩餘 <span className="font-semibold">{creditsRemaining}</span> 積分
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || (!quotaExceeded && creditsRemaining !== -1 && creditsRemaining < creditCost)}
           className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-xl transition-colors text-sm"
         >
           {loading ? (
