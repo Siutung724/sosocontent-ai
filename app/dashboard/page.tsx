@@ -8,11 +8,17 @@ import type { Workflow } from '@/lib/workflow-types';
 
 const WORKFLOW_ICONS: Record<string, string> = {
   weekly_social:   '📅',
-  brand_story:     '✍️',
+  brand_strategy:  '📚',
   product_launch:  '🚀',
   brand_trust:     '🏷️',
-  brand_strategy:  '📚',
+  kol_script:      '🎬',
+  flash_sale:      '⚡',
+  competitor_ad:   '🔍',
 };
+
+const FREE_LIFETIME_CREDITS     = 120;
+const PRO_PERIOD_CREDITS        = 1000;
+const ENTERPRISE_PERIOD_CREDITS = 5000;
 
 const PLAN_LABELS: Record<string, { label: string; color: string }> = {
   free:       { label: '免費版',  color: 'bg-primary/8 text-secondary' },
@@ -43,7 +49,7 @@ export default async function DashboardPage() {
   // 2. All executions by this user (for stats + most-used)
   const allExecsPromise = supabase
     .from('executions')
-    .select('id, workflow_id, inputs, created_at')
+    .select('id, workflow_id, inputs, created_at, credits_used')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -69,10 +75,43 @@ export default async function DashboardPage() {
   }
 
   // Stats
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const monthExecs = allExecs.filter(e => e.created_at >= monthStart);
   const totalExecs = allExecs.length;
+
+  // Credits remaining
+  let creditsRemaining = -1; // sentinel: unlimited (shouldn't be shown)
+  let creditsAllowance = 0;
+  {
+    let periodStart: string | null = null;
+    let allowance: number;
+
+    if (plan === 'free') {
+      allowance = FREE_LIFETIME_CREDITS;
+      periodStart = null; // all-time
+    } else {
+      allowance = plan === 'enterprise' ? ENTERPRISE_PERIOD_CREDITS : PRO_PERIOD_CREDITS;
+      const { data: planRow } = await supabase
+        .from('user_plans')
+        .select('current_period_end')
+        .eq('user_id', user.id)
+        .single();
+
+      if (planRow?.current_period_end) {
+        const periodEnd = new Date(planRow.current_period_end);
+        periodEnd.setMonth(periodEnd.getMonth() - 1);
+        periodStart = periodEnd.toISOString();
+      } else {
+        const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0);
+        periodStart = d.toISOString();
+      }
+    }
+
+    const periodExecs = periodStart
+      ? allExecs.filter(e => e.created_at >= periodStart!)
+      : allExecs;
+    const creditsUsed = periodExecs.reduce((sum, e) => sum + ((e as any).credits_used ?? 1), 0);
+    creditsRemaining = Math.max(0, allowance - creditsUsed);
+    creditsAllowance = allowance;
+  }
 
   // Most-used workflows (top 3)
   const wfCounts: Record<string, number> = {};
@@ -93,10 +132,6 @@ export default async function DashboardPage() {
 
   // Recent 5 executions
   const recentExecs = allExecs.slice(0, 5);
-
-  // Free plan limit
-  const FREE_LIMIT = 1;
-  const remaining = plan === 'free' ? Math.max(0, FREE_LIMIT - monthExecs.length) : null;
 
   return (
     <AppLayout>
@@ -133,15 +168,13 @@ export default async function DashboardPage() {
             <p className="text-xs text-secondary/60 mt-1">累計 AI 生成</p>
           </div>
           <div className="bg-surface border border-primary/8 rounded-2xl p-5">
-            <p className="text-xs text-secondary font-medium mb-1">本月生成</p>
-            <p className="text-3xl font-bold text-primary">{monthExecs.length}</p>
-            {remaining !== null ? (
-              <p className={`text-xs mt-1 font-medium ${remaining === 0 ? 'text-red-500' : 'text-secondary/60'}`}>
-                剩餘 {remaining} 次
-              </p>
-            ) : (
-              <p className="text-xs text-secondary/60 mt-1">無限制</p>
-            )}
+            <p className="text-xs text-secondary font-medium mb-1">剩餘積分</p>
+            <p className={`text-3xl font-bold ${creditsRemaining === 0 ? 'text-red-500' : 'text-primary'}`}>
+              {creditsRemaining.toLocaleString()}
+            </p>
+            <p className="text-xs text-secondary/60 mt-1">
+              共 {creditsAllowance.toLocaleString()} 積分
+            </p>
           </div>
           <div className="bg-surface border border-primary/8 rounded-2xl p-5">
             <p className="text-xs text-secondary font-medium mb-1">品牌數量</p>
@@ -161,24 +194,32 @@ export default async function DashboardPage() {
               <p className="text-sm font-bold text-primary">
                 工作坊 →
               </p>
-              <p className="text-xs text-secondary/70 mt-0.5">直達全部 6 個工作流程</p>
+              <p className="text-xs text-secondary/70 mt-0.5">直達全部 7 個工作流程</p>
             </div>
           </Link>
         </div>
 
-        {/* ── Free plan quota warning ── */}
-        {remaining === 0 && (
+        {/* ── Credits warning ── */}
+        {creditsRemaining === 0 && (
           <div className="bg-red-500/8 border border-red-500/20 rounded-2xl p-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-red-600 dark:text-red-400">本月免費額度已用盡</p>
-              <p className="text-xs text-secondary mt-0.5">升級至 Pro 解鎖無限生成</p>
+              <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+                {plan === 'free' ? '免費試用積分已用盡 🔒' : '本期積分已用盡'}
+              </p>
+              <p className="text-xs text-secondary mt-0.5">
+                {plan === 'free'
+                  ? '升級至 Pro，每個結帳周期獲得 1,000 積分'
+                  : '積分將於下期帳單日自動補充'}
+              </p>
             </div>
-            <Link
-              href="/pricing"
-              className="shrink-0 bg-accent text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-accent/90 transition-colors"
-            >
-              立即升級
-            </Link>
+            {plan === 'free' && (
+              <Link
+                href="/pricing"
+                className="shrink-0 bg-accent text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-accent/90 transition-colors"
+              >
+                立即升級
+              </Link>
+            )}
           </div>
         )}
 
