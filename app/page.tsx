@@ -9,18 +9,45 @@ import LandingOverlays from '@/components/LandingOverlays';
 const FEATURES = [
   {
     icon: '📅',
-    title: '7日社交媒體計劃',
-    desc: '輸入品牌資料，AI 自動生成一週 IG、Facebook、LinkedIn 貼文，每篇附主題、正文、Hashtag 及配圖建議。',
+    title: '七日內容策略',
+    desc: '輸入品牌資料，AI 自動生成一週 IG、Facebook、小紅書貼文，每篇附主題、正文、Hashtag 及配圖建議。',
+    cost: 20,
   },
   {
-    icon: '✍️',
-    title: '品牌故事生成',
-    desc: '輸入你的品牌背景，AI 以地道廣東話撰寫感人品牌故事，提升客戶信任感與品牌認同。',
+    icon: '📚',
+    title: '品牌定位一鍵生成',
+    desc: '釐清品牌核心價值、目標受眾、差異化賣點，生成完整品牌定位報告，為所有文案奠定基礎。',
+    cost: 20,
   },
   {
     icon: '🚀',
-    title: '產品推廣文案',
+    title: '高轉化廣告文案',
     desc: '新品上市、限時優惠、活動推廣一鍵生成，多款語氣選擇，配合不同行銷場景。',
+    cost: 10,
+  },
+  {
+    icon: '🏷️',
+    title: '客評廣告素材轉化',
+    desc: '將真實客戶評語轉化為高可信度廣告文案，善用社交證明提升轉化率。',
+    cost: 10,
+  },
+  {
+    icon: '🎬',
+    title: 'KOL 合作腳本',
+    desc: '為 KOL / 紅人合作生成完整推廣腳本，涵蓋開場、賣點展示、行動呼籲，節省溝通時間。',
+    cost: 10,
+  },
+  {
+    icon: '⚡',
+    title: '限時優惠爆款帖',
+    desc: '製造緊迫感、突出優惠幅度，生成引爆分享的限時促銷貼文，適合 Flash Sale 及節慶活動。',
+    cost: 10,
+  },
+  {
+    icon: '🔍',
+    title: '競爭對手廣告拆解',
+    desc: '輸入對手廣告文案，AI 拆解其策略並生成更具競爭力的反制文案，幫你搶佔市場。',
+    cost: 20,
   },
 ];
 
@@ -100,7 +127,7 @@ export default async function LandingPage() {
 
           {/* Bullets */}
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-secondary mb-10">
-            {['✓ 無需寫作經驗', '✓ 廣東話 AI 生成', '✓ 免費開始使用'].map(b => (
+            {['✓ 無需寫作經驗', '✓ 廣東話 AI 生成', '✓ 120 積分免費試用', '✓ 7 大工作流程'].map(b => (
               <span key={b} className="text-cta/80">{b}</span>
             ))}
           </div>
@@ -125,16 +152,22 @@ export default async function LandingPage() {
 
         {/* ── Feature grid ── */}
         <div id="features" className="mt-24 max-w-5xl mx-auto w-full">
-          <h2 className="text-xs font-semibold text-secondary uppercase tracking-widest mb-8">
-            核心功能
+          <h2 className="text-xs font-semibold text-secondary uppercase tracking-widest mb-2">
+            7 大工作流程
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+          <p className="text-xs text-secondary/60 mb-8">每個工作流程消耗 10–20 積分，免費帳戶附送 120 積分</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
             {FEATURES.map(f => (
               <div
                 key={f.title}
                 className="bg-surface border border-primary/8 rounded-2xl p-6 hover:border-cta/20 transition-colors"
               >
-                <span className="text-3xl mb-4 block">{f.icon}</span>
+                <div className="flex items-start justify-between gap-2 mb-4">
+                  <span className="text-3xl">{f.icon}</span>
+                  <span className="text-xs text-cta/70 border border-cta/20 bg-cta/5 px-2 py-0.5 rounded-full shrink-0 font-medium">
+                    {f.cost} 積分
+                  </span>
+                </div>
                 <h3 className="text-sm font-semibold text-primary mb-2">{f.title}</h3>
                 <p className="text-xs text-secondary leading-relaxed">{f.desc}</p>
               </div>
