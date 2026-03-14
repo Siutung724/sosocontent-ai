@@ -182,7 +182,7 @@ export interface BrandTrustResult {
   };
 }
 
-// ── brand_strategy result shape ───────────────────────────────────────────────
+// ── brand_strategy result shape (v1 legacy) ───────────────────────────────────
 
 export interface BrandStrategyResult {
   brand_strategy: {
@@ -195,9 +195,52 @@ export interface BrandStrategyResult {
   };
 }
 
+// ── brand_positioning result shape (v2 — 品牌定位一鍵生成器) ──────────────────
+
+export interface BrandPositioningResult {
+  brand_positioning: {
+    one_liner: string;
+    differentiation_angles: { angle: string; description: string }[];
+    brand_voice_keywords: string[];
+    pain_points: { rank: number; pain: string; insight: string }[];
+    local_elements: string[];
+    competitor_gaps: { competitor_weakness: string; our_opportunity: string }[];
+    action_steps: string[];
+  };
+}
+
+// ── ad_copy result shape (高轉化廣告文案生成器) ───────────────────────────────
+
+export interface AdCopyResult {
+  ad_copy: {
+    hook: string;
+    body: string;
+    social_proof: string;
+    cta: string;
+    full_copy: string;
+    hashtags: string[];
+    visual_direction: string;
+  };
+}
+
+// ── review_to_ad result shape (客評廣告素材轉化器) ────────────────────────────
+
+export interface ReviewToAdResult {
+  review_to_ad: {
+    quote_version: string;
+    story_version: string;
+    data_version: string;
+    qa_version: string;
+    hashtags: string[];
+  };
+}
+
 export type WorkflowResult =
   | WeeklySocialResult
   | BrandStoryResult
   | ProductLaunchResult
   | BrandTrustResult
-  | BrandStrategyResult;
+  | BrandStrategyResult
+  | BrandPositioningResult
+  | AdCopyResult
+  | ReviewToAdResult;

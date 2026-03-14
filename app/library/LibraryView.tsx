@@ -8,6 +8,9 @@ import type {
   ProductLaunchResult,
   BrandTrustResult,
   BrandStrategyResult,
+  BrandPositioningResult,
+  AdCopyResult,
+  ReviewToAdResult,
 } from '@/lib/workflow-types';
 import { useToast } from '@/hooks/useToast';
 
@@ -433,6 +436,148 @@ function BrandStrategyPanel({ result }: { result: unknown }) {
   );
 }
 
+// ── BrandPositioningPanel (v2 brand_strategy) ────────────────────────────────
+
+function BrandPositioningPanel({ result }: { result: unknown }) {
+  const d = (result as BrandPositioningResult).brand_positioning;
+  if (!d) return <RawJson result={result} />;
+  return (
+    <div className="space-y-3 pt-2">
+      <CopyBlock label="🎯 一句話品牌定位" text={d.one_liner} />
+      {d.differentiation_angles?.length > 0 && (
+        <div className="bg-surface border border-primary/8 rounded-xl px-4 py-3 space-y-2">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wide">差異化角度</p>
+          {d.differentiation_angles.map((a, i) => (
+            <div key={i} className="border-l-2 border-accent/40 pl-3">
+              <p className="text-sm font-semibold text-primary">{a.angle}</p>
+              {a.description && <p className="text-xs text-secondary mt-0.5">{a.description}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+      {d.brand_voice_keywords?.length > 0 && (
+        <div className="bg-surface border border-primary/8 rounded-xl px-4 py-3">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wide mb-2">品牌語氣關鍵詞</p>
+          <div className="flex flex-wrap gap-2">
+            {d.brand_voice_keywords.map((kw, i) => (
+              <span key={i} className="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">{kw}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {d.pain_points?.length > 0 && (
+        <div className="bg-surface border border-primary/8 rounded-xl px-4 py-3 space-y-2">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wide">核心痛點排序</p>
+          {d.pain_points.map((p, i) => (
+            <div key={i} className="flex gap-3 items-start">
+              <span className="text-xs font-bold text-accent/70 bg-accent/10 rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">{p.rank}</span>
+              <div>
+                <p className="text-sm text-primary">{p.pain}</p>
+                {p.insight && <p className="text-xs text-secondary/70 mt-0.5">→ {p.insight}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {d.local_elements?.length > 0 && (
+        <div className="bg-surface border border-primary/8 rounded-xl px-4 py-3">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wide mb-2">🇭🇰 香港本地化元素</p>
+          <div className="flex flex-wrap gap-2">
+            {d.local_elements.map((el, i) => (
+              <span key={i} className="text-xs bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full">{el}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {d.competitor_gaps?.length > 0 && (
+        <div className="bg-surface border border-primary/8 rounded-xl px-4 py-3 space-y-2">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wide">競爭對手弱點 → 我的機會</p>
+          {d.competitor_gaps.map((g, i) => (
+            <div key={i} className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-danger/5 border border-danger/10 rounded-lg px-3 py-2">
+                <span className="text-danger/70 font-medium">弱點：</span>
+                <span className="text-primary">{g.competitor_weakness}</span>
+              </div>
+              <div className="bg-success/5 border border-success/10 rounded-lg px-3 py-2">
+                <span className="text-success font-medium">機會：</span>
+                <span className="text-primary">{g.our_opportunity}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {d.action_steps?.length > 0 && (
+        <div className="bg-surface border border-primary/8 rounded-xl px-4 py-3">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wide mb-2">⚡ 立即行動步驟</p>
+          <ol className="space-y-1.5">
+            {d.action_steps.map((step, i) => (
+              <li key={i} className="text-sm text-primary flex gap-2">
+                <span className="text-accent font-bold shrink-0">{i + 1}.</span>{step}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── AdCopyPanel (v2 product_launch) ──────────────────────────────────────────
+
+function AdCopyPanel({ result }: { result: unknown }) {
+  const d = (result as AdCopyResult).ad_copy;
+  if (!d) return <RawJson result={result} />;
+  return (
+    <div className="space-y-3 pt-2">
+      <CopyBlock label="🪝 開場勾住注意力" text={d.hook} />
+      <CopyBlock label="中段建立渴望" text={d.body} />
+      <CopyBlock label="社會認證" text={d.social_proof} />
+      <CopyBlock label="行動號召 CTA" text={d.cta} />
+      <CopyBlock label="📋 完整廣告全文" text={d.full_copy} />
+      {d.visual_direction && (
+        <p className="text-xs text-secondary italic flex gap-1.5 px-1">
+          <span>🖼</span>{d.visual_direction}
+        </p>
+      )}
+      {d.hashtags?.length > 0 && (
+        <div className="bg-surface border border-primary/8 rounded-xl px-4 py-3">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wide mb-2">Hashtag 策略</p>
+          <div className="flex flex-wrap gap-1">
+            {d.hashtags.map(t => (
+              <span key={t} className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{t}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ReviewToAdPanel (v2 brand_trust) ─────────────────────────────────────────
+
+function ReviewToAdPanel({ result }: { result: unknown }) {
+  const d = (result as ReviewToAdResult).review_to_ad;
+  if (!d) return <RawJson result={result} />;
+  return (
+    <div className="space-y-3 pt-2">
+      <CopyBlock label="💬 精煉引言（圖片廣告用）" text={d.quote_version} />
+      <CopyBlock label="📖 故事化帖文（第一人稱）" text={d.story_version} />
+      <CopyBlock label="📊 數據強化版" text={d.data_version} />
+      <CopyBlock label="❓ 問答格式版" text={d.qa_version} />
+      {d.hashtags?.length > 0 && (
+        <div className="bg-surface border border-primary/8 rounded-xl px-4 py-3">
+          <p className="text-xs font-semibold text-secondary uppercase tracking-wide mb-2">Hashtag</p>
+          <div className="flex flex-wrap gap-1">
+            {d.hashtags.map(t => (
+              <span key={t} className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{t}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Raw JSON fallback ─────────────────────────────────────────────────────────
 
 function RawJson({ result }: { result: unknown }) {
@@ -466,9 +611,22 @@ function ResultPanel({ workflowKey, result }: { workflowKey: string | null; resu
     }
   }
   if (workflowKey === 'brand_story')    return <BrandStoryPanel result={result} />;
-  if (workflowKey === 'product_launch') return <ProductLaunchPanel result={result} />;
-  if (workflowKey === 'brand_trust')    return <BrandTrustPanel result={result} />;
-  if (workflowKey === 'brand_strategy') return <BrandStrategyPanel result={result} />;
+  if (workflowKey === 'product_launch') {
+    // v2: ad_copy key; v1: product_launch key
+    const r = result as Record<string, unknown>;
+    if (r?.ad_copy) return <AdCopyPanel result={result} />;
+    return <ProductLaunchPanel result={result} />;
+  }
+  if (workflowKey === 'brand_trust') {
+    const r = result as Record<string, unknown>;
+    if (r?.review_to_ad) return <ReviewToAdPanel result={result} />;
+    return <BrandTrustPanel result={result} />;
+  }
+  if (workflowKey === 'brand_strategy') {
+    const r = result as Record<string, unknown>;
+    if (r?.brand_positioning) return <BrandPositioningPanel result={result} />;
+    return <BrandStrategyPanel result={result} />;
+  }
   return <RawJson result={result} />;
 }
 
