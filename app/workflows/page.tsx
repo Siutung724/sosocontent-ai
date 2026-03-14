@@ -5,45 +5,63 @@ import type { Workflow, BrandProfile } from '@/lib/workflow-types';
 
 const WORKFLOW_ICONS: Record<string, string> = {
   weekly_social: '📅',
-  brand_story: '✍️',
-  product_launch: '🚀',
+  brand_strategy: '🎯',
+  product_launch: '📣',
+  brand_trust: '⭐',
+  kol_script: '🤝',
+  flash_sale: '⚡',
+  competitor_ad: '🔍',
 };
 
 const QUICK_TASKS = [
   {
-    title: '品牌權威認可',
-    desc: '整合媒體報導、獎項與客戶見證，建立令人信服的品牌公信力。',
-    emoji: '🏷️',
-    href: '/brand_trust',
-    accent: 'from-yellow-500/10 to-yellow-500/5',
-  },
-  {
-    title: '行業競爭分析',
-    desc: '拆解競爭對手的內容策略與定位，找出你的差異化優勢。',
-    emoji: '📚',
-    href: '/brand_strategy',
-    accent: 'from-emerald-500/10 to-emerald-500/5',
-  },
-  {
-    title: '品牌故事撰寫',
-    desc: '把品牌核心精神轉化為打動受眾的故事文案，讓人記住你。',
-    emoji: '✍️',
-    href: '/workflows/brand_story',
-    accent: 'from-cta/10 to-cta/5',
-  },
-  {
-    title: '社交媒體週計劃',
-    desc: '七天 IG / FB 貼文一次過搞掂，每篇都貼合你的品牌語氣。',
+    title: '七日社交媒體策略',
+    desc: '七天 IG / FB 貼文一次過搞掂，4 類內容輪播，每篇都貼合品牌語氣。',
     emoji: '📅',
     href: '/workflows/weekly_social',
     accent: 'from-accent/10 to-accent/5',
   },
   {
-    title: '新品上市推廣',
-    desc: '快速生成產品賣點、活動口號與推廣文字，搶佔市場注意力。',
-    emoji: '🚀',
+    title: '品牌定位一鍵生成',
+    desc: '拆解痛點、差異化角度與競爭空間，建立「先定位，後內容」的策略基礎。',
+    emoji: '🎯',
+    href: '/workflows/brand_strategy',
+    accent: 'from-emerald-500/10 to-emerald-500/5',
+  },
+  {
+    title: '高轉化廣告文案',
+    desc: '一鍵生成鈎子、正文、社會認證與 CTA，適用 IG / FB / Google 廣告。',
+    emoji: '📣',
     href: '/workflows/product_launch',
     accent: 'from-purple-500/10 to-purple-500/5',
+  },
+  {
+    title: '客評廣告素材轉化',
+    desc: '把客戶好評變成 4 款廣告素材：引述版、故事版、數據版、問答版。',
+    emoji: '⭐',
+    href: '/workflows/brand_trust',
+    accent: 'from-yellow-500/10 to-yellow-500/5',
+  },
+  {
+    title: 'KOL 合作腳本',
+    desc: '生成開場、體驗分享、前後對比與推薦語，讓 KOL 真實帶貨。',
+    emoji: '🤝',
+    href: '/workflows/kol_script',
+    accent: 'from-rose-500/10 to-rose-500/5',
+  },
+  {
+    title: '限時優惠爆款帖',
+    desc: '製造緊迫感、突出優惠、降低抗拒，推動即時行動的限時推廣文案。',
+    emoji: '⚡',
+    href: '/workflows/flash_sale',
+    accent: 'from-orange-500/10 to-orange-500/5',
+  },
+  {
+    title: '競爭對手廣告拆解',
+    desc: '分析對手廣告的核心訴求、情感觸發與 CTA，找出可借用的策略。',
+    emoji: '🔍',
+    href: '/workflows/competitor_ad',
+    accent: 'from-sky-500/10 to-sky-500/5',
   },
   {
     title: '品牌聲線設定',
@@ -103,7 +121,7 @@ export default async function WorkflowsPage() {
         {/* Quick tasks */}
         <div>
           <h2 className="text-xs font-semibold text-secondary uppercase tracking-widest mb-4">從一個任務開始</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {QUICK_TASKS.map(task => (
               <Link
                 key={task.href}
