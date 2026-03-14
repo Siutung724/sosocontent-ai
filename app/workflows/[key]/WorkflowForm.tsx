@@ -407,20 +407,16 @@ export default function WorkflowForm({ workflowKey, variables, creditCost, credi
             <span>
               消耗 <span className="font-semibold text-accent">{creditCost}</span> 積分
             </span>
-            {creditsRemaining === -1 ? (
-              <span className="text-cta font-medium">✓ 無限積分</span>
-            ) : (
-              <span className={creditsRemaining < creditCost ? 'text-danger font-medium' : ''}>
-                剩餘 <span className="font-semibold">{creditsRemaining}</span> 積分
-              </span>
-            )}
+            <span className={creditsRemaining < creditCost ? 'text-danger font-medium' : ''}>
+              剩餘 <span className="font-semibold">{creditsRemaining.toLocaleString()}</span> 積分
+            </span>
           </div>
         )}
 
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading || (!quotaExceeded && creditsRemaining !== -1 && creditsRemaining < creditCost)}
+          disabled={loading || (!quotaExceeded && creditsRemaining < creditCost)}
           className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-xl transition-colors text-sm"
         >
           {loading ? (

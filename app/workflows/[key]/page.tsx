@@ -9,8 +9,9 @@ interface PageProps {
   params: Promise<{ key: string }>;
 }
 
-const FREE_LIFETIME_CREDITS = 120;
-const PRO_PERIOD_CREDITS    = 1000;
+const FREE_LIFETIME_CREDITS      = 120;
+const PRO_PERIOD_CREDITS         = 1000;
+const ENTERPRISE_PERIOD_CREDITS  = 5000;
 
 export default async function WorkflowPage({ params }: PageProps) {
   const { key } = await params;
@@ -52,7 +53,7 @@ export default async function WorkflowPage({ params }: PageProps) {
   const plan = (user?.user_metadata?.plan as string | undefined) ?? 'free';
   let creditsRemaining = -1; // default: unlimited (enterprise)
 
-  if (user && plan !== 'enterprise') {
+  if (user) {
     let periodStart: string | null = null;
     let allowance: number;
 
@@ -60,7 +61,7 @@ export default async function WorkflowPage({ params }: PageProps) {
       allowance = FREE_LIFETIME_CREDITS;
       periodStart = null; // all-time
     } else {
-      allowance = PRO_PERIOD_CREDITS;
+      allowance = plan === 'enterprise' ? ENTERPRISE_PERIOD_CREDITS : PRO_PERIOD_CREDITS;
       const { data: planRow } = await supabase
         .from('user_plans')
         .select('current_period_end')

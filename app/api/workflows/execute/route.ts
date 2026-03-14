@@ -13,8 +13,11 @@ import type {
 /** Free users get a one-time lifetime allotment (never resets). */
 const FREE_LIFETIME_CREDITS = 120;
 
-/** Pro users get this many credits per billing period (no rollover). -1 = unlimited. */
+/** Pro users get this many credits per billing period (no rollover). */
 const PRO_PERIOD_CREDITS = 1000;
+
+/** Enterprise cap per billing period — prevents runaway AI costs. */
+const ENTERPRISE_PERIOD_CREDITS = 5000;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -80,7 +83,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
   if (user) {
     const plan = (user.user_metadata?.plan as string | undefined) ?? 'free';
 
-    if (plan !== 'enterprise') {
+    {
       let periodStart: string | null = null;
       let allowance: number;
 
@@ -89,8 +92,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
         allowance = FREE_LIFETIME_CREDITS;
         periodStart = null;
       } else {
-        // Pro: per billing period (period start = current_period_end - 1 month)
-        allowance = PRO_PERIOD_CREDITS;
+        // Pro / Enterprise: per billing period (no rollover)
+        allowance = plan === 'enterprise' ? ENTERPRISE_PERIOD_CREDITS : PRO_PERIOD_CREDITS;
         const { data: planRow } = await supabase
           .from('user_plans')
           .select('current_period_end')
@@ -123,14 +126,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<ExecuteWorkfl
 
       if (creditsUsed + creditCost > allowance) {
         const remaining = Math.max(0, allowance - creditsUsed);
-        const isFree = plan === 'free';
+        const errMsg = remaining === 0
+          ? plan === 'free'
+            ? `免費試用積分已用盡（共 ${allowance} 積分），升級至 Pro 即可每月獲得 ${PRO_PERIOD_CREDITS} 積分。`
+            : `本期積分已用盡（${allowance} 積分），下期自動補充。`
+          : `積分不足：此工作流程需要 ${creditCost} 積分，你只剩 ${remaining} 積分。`;
         return NextResponse.json(
           {
-            error: remaining === 0
-              ? isFree
-                ? `免費試用積分已用盡（共 ${allowance} 積分），升級至 Pro 即可每月獲得 ${PRO_PERIOD_CREDITS} 積分。`
-                : `本期積分已用盡（${allowance} 積分），下期自動補充。`
-              : `積分不足：此工作流程需要 ${creditCost} 積分，你只剩 ${remaining} 積分。`,
+            error: errMsg,
             creditsRemaining: remaining,
             creditCost,
           } as any,
