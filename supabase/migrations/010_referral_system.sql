@@ -54,9 +54,14 @@ CREATE TABLE IF NOT EXISTS referrals (
 
 ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view their own referrals"
-  ON referrals FOR SELECT
-  USING (auth.uid() = referrer_id OR auth.uid() = referee_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'referrals' AND policyname = 'Users can view their own referrals'
+  ) THEN
+    EXECUTE 'CREATE POLICY "Users can view their own referrals" ON referrals FOR SELECT USING (auth.uid() = referrer_id OR auth.uid() = referee_id)';
+  END IF;
+END $$;
 
 -- 3. Function: ensure user_plans row exists on first login
 CREATE OR REPLACE FUNCTION ensure_user_plan(p_user_id UUID)
